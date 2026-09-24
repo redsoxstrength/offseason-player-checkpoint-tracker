@@ -268,49 +268,11 @@
   .footnote{font-size:11.5px;color:var(--ink-dim);margin-top:8px;}
   ::-webkit-scrollbar{height:9px;width:9px;}
   ::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px;}
-
-  /* ---- Auth gate ---- */
-  #authGate{
-    position:fixed;inset:0;background:var(--navy);color:#fff;z-index:999;
-    display:flex;align-items:center;justify-content:center;padding:24px;
-  }
-  #authGate .card{
-    max-width:380px;width:100%;text-align:center;
-  }
-  #authGate .mark{width:72px;height:72px;border-radius:50%;background:#fff;object-fit:contain;margin:0 auto 18px;display:block;}
-  #authGate h1{font-family:'Space Grotesk';font-size:20px;margin:0 0 6px;}
-  #authGate p{color:#C9D5E5;font-size:13.5px;margin:0 0 22px;line-height:1.5;}
-  #authGate .g-btn{
-    display:inline-flex;align-items:center;gap:10px;background:#fff;color:#1B1D22;border:none;
-    border-radius:8px;padding:11px 20px;font:inherit;font-weight:700;font-size:14px;cursor:pointer;
-  }
-  #authGate .g-btn:hover{filter:brightness(.97);}
-  #authGate .denied{background:var(--bad-bg);color:var(--bad);border-radius:8px;padding:12px 14px;font-size:13px;margin-top:16px;text-align:left;}
-  #authGate .signout{margin-top:14px;background:none;border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:8px;padding:8px 14px;font:inherit;font-size:12.5px;cursor:pointer;}
-  #authGate .loading{color:#C9D5E5;font-size:13px;}
-  #authGate[hidden]{display:none;}
-  #appRoot[hidden]{display:none;}
-  .whoami{font-size:11.5px;color:#C9D5E5;display:flex;align-items:center;gap:8px;}
-  .whoami button{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:6px;padding:5px 10px;font:inherit;font-size:11px;cursor:pointer;}
 </style>
 </head>
 <body>
 
-<div id="authGate">
-  <div class="card">
-    <img class="mark" alt="Boston Red Sox Strength &amp; Conditioning" src="icon-512.png">
-    <h1>Off-Season Checkpoint Tracker</h1>
-    <p>Sign in with your Red Sox Google account to view and update the coach checkpoint tracker.</p>
-    <div id="authGateBody">
-      <button class="g-btn" id="signInBtn">
-        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.21 1.13-.85 2.09-1.81 2.73v2.27h2.92c1.71-1.57 2.69-3.88 2.69-6.64z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.81 5.96-2.18l-2.92-2.27c-.81.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.71H.96v2.33C2.44 15.98 5.48 18 9 18z"/><path fill="#FBBC05" d="M3.97 10.7c-.18-.54-.28-1.11-.28-1.7s.1-1.16.28-1.7V4.97H.96C.35 6.17 0 7.54 0 9s.35 2.83.96 4.03l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.97l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg>
-        Sign in with Google
-      </button>
-    </div>
-  </div>
-</div>
-
-<div id="appRoot" hidden>
+<div id="appRoot">
 
 <header class="top">
   <div class="wrap">
@@ -329,10 +291,6 @@
     <div class="res-btns">
       <button id="btnCallScript">Call Script</button>
       <button id="btnSlackScript">Slack Post Script</button>
-    </div>
-    <div class="whoami" id="whoami" style="display:none;">
-      <span id="whoamiEmail"></span>
-      <button id="signOutBtn">Sign out</button>
     </div>
   </div>
 </header>
@@ -821,13 +779,10 @@ const DEFAULT_STATE = {
 
 
 /* ============================================================================
-   FIREBASE CONFIG -- paste your project's config object here
+   FIREBASE CONFIG
    ----------------------------------------------------------------------------
-   Firebase console -> Project settings -> Your apps -> web app (</>) ->
-   copy the firebaseConfig object it shows you and paste it in below,
-   replacing the placeholder values. Until you do, this page runs in a
-   local-only demo mode (see initStore below): it still works for you to
-   click around, but nothing is shared or saved between coaches.
+   GitHub Pages hosts this application. Firebase Firestore stores and syncs the
+   shared tracker data. Authentication is intentionally not used for this tool.
 ============================================================================ */
 const firebaseConfig = {
   apiKey: "AIzaSyAqFg1zetohhKDulqqiJMumSWM5ilR753g",
@@ -840,85 +795,26 @@ const firebaseConfig = {
 const FIREBASE_CONFIGURED = !String(firebaseConfig.apiKey).startsWith('PASTE_');
 
 /* ============================================================================
-   COACH ALLOWLIST -- who is allowed to sign in and use this tool
+   DATA CONNECTION -- Firebase Firestore
    ----------------------------------------------------------------------------
-   PLACEHOLDER EMAILS BELOW -- replace with each coach's real Google
-   sign-in address before you go live. Simon only had names on file, not
-   verified email addresses, when this was built.
+   This tool holds names and tracker state only. No login is required. Anyone
+   with the page URL can view and update the shared tracker. Firestore is the
+   source of truth after the first successful connection.
 
-   This array only controls the sign-in SCREEN (a friendlier "you're not
-   on the list yet" message vs. a raw permission error). The real security
-   boundary is the Firestore security rules, which check a matching
-   emails list stored in the config/coaches document in Firestore itself
-   (see the setup notes delivered alongside this file for the exact rules
-   text and how to create that document). Keep both lists in sync: when
-   you add or remove a coach, update this array AND the config/coaches
-   document. Matching is case-insensitive here; keep entries lowercase
-   in the Firestore document to match.
+   First-run seed: the first time this page runs against a brand-new empty
+   Firestore project, it writes the bundled roster once. After that, the seed is
+   ignored and Firestore remains the source of truth.
 ============================================================================ */
-const COACH_EMAIL_ALLOWLIST = [
-  'REPLACE_ME_nick.larue@example.com',
-  'REPLACE_ME_jonah.mondloch@example.com',
-  'REPLACE_ME_dan.rosen@example.com',
-  'REPLACE_ME_tj.jackson@example.com',
-  'REPLACE_ME_ashley.dube@example.com',
-  'REPLACE_ME_bj.foley@example.com',
-  'sthomas@redsox.com'
-].map(e => e.toLowerCase());
-
-/* ============================================================================
-   DATA CONNECTION -- Firebase Auth (Google sign-in) + Firestore
-   ----------------------------------------------------------------------------
-   This tool holds NAMES ONLY -- no phone numbers, emails, or home
-   locations live here. Full contact details are in the separate static
-   PDF reference kept outside this tool.
-
-   Sign-in gate: a viewer must sign in with a Google account whose email is
-   in COACH_EMAIL_ALLOWLIST above. Firestore security rules should also
-   check this allowlist server-side (see the security rules Simon was
-   given alongside this file) -- the client-side check here is a
-   convenience for the sign-in screen, not the real security boundary.
-
-   First-run seed: the first time this page runs against a brand-new,
-   empty Firestore project, it writes the bundled roster below once so
-   you don't have to re-enter 163 players by hand. After that, Firestore
-   is the source of truth and this seed is ignored.
-============================================================================ */
-let fbApp = null, fbAuth = null, fbDb = null;
-let currentUser = null;
+let fbApp = null, fbDb = null;
 let dbAvailable = false;
 let playersCache = [];
 let settingsCache = JSON.parse(JSON.stringify(DEFAULT_STATE.settings));
 let checklistCache = {};
 let unsubscribers = [];
 
-function showGateSignIn(){
-  document.getElementById('authGateBody').innerHTML = `
-    <button class="g-btn" id="signInBtn">
-      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.21 1.13-.85 2.09-1.81 2.73v2.27h2.92c1.71-1.57 2.69-3.88 2.69-6.64z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.81 5.96-2.18l-2.92-2.27c-.81.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.71H.96v2.33C2.44 15.98 5.48 18 9 18z"/><path fill="#FBBC05" d="M3.97 10.7c-.18-.54-.28-1.11-.28-1.7s.1-1.16.28-1.7V4.97H.96C.35 6.17 0 7.54 0 9s.35 2.83.96 4.03l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.97l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg>
-      Sign in with Google
-    </button>`;
-  document.getElementById('signInBtn').addEventListener('click', doSignIn);
-}
-function showGateDenied(email){
-  document.getElementById('authGateBody').innerHTML = `
-    <div class="denied">Signed in as <b>${email}</b>, but this address isn't on the off-season tracker's coach list yet. Ask Simon Thomas to add it.</div>
-    <button class="signout" id="deniedSignOutBtn">Sign out</button>`;
-  document.getElementById('deniedSignOutBtn').addEventListener('click', () => fbAuth.signOut());
-}
-async function doSignIn(){
-  const { GoogleAuthProvider, signInWithPopup } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js');
-  try {
-    await signInWithPopup(fbAuth, new GoogleAuthProvider());
-  } catch (e) {
-    console.error('sign-in failed', e);
-    showGateSignIn();
-  }
-}
-
 async function seedFirestoreIfEmpty(fsMod, col, docs){
   const playersSnap = await fsMod.getDocs(col.players);
-  if (!playersSnap.empty) return; // already has data -- never overwrite
+  if (!playersSnap.empty) return;
   const writes = DEFAULT_STATE.players.map(p => {
     const { id, ...rest } = p;
     return fsMod.setDoc(docs.player(id), rest);
@@ -928,81 +824,51 @@ async function seedFirestoreIfEmpty(fsMod, col, docs){
 }
 
 async function initStore(){
-  renderAll(); // paint the shell immediately with whatever we have (bundled seed)
+  renderAll();
 
   if (!FIREBASE_CONFIGURED) {
-    // Local-demo mode: no Firebase config pasted in yet. Everything works
-    // for one person clicking around, but nothing is saved or shared.
     playersCache = JSON.parse(JSON.stringify(DEFAULT_STATE.players));
     settingsCache = JSON.parse(JSON.stringify(DEFAULT_STATE.settings));
     dbAvailable = false;
-    document.getElementById('authGate').setAttribute('hidden', '');
-    document.getElementById('appRoot').removeAttribute('hidden');
     renderAll();
     return;
   }
 
-  const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
-  const authMod = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js');
-  const fsMod = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+  try {
+    const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
+    const fsMod = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
 
-  fbApp = initializeApp(firebaseConfig);
-  fbAuth = authMod.getAuth(fbApp);
-  fbDb = fsMod.getFirestore(fbApp);
+    fbApp = initializeApp(firebaseConfig);
+    fbDb = fsMod.getFirestore(fbApp);
 
-  const col = {
-    players: fsMod.collection(fbDb, 'players'),
-    checklist: fsMod.collection(fbDb, 'checklist'),
-  };
-  const docs = {
-    player: (id) => fsMod.doc(fbDb, 'players', id),
-    settings: fsMod.doc(fbDb, 'settings', 'general'),
-    check: (key) => fsMod.doc(fbDb, 'checklist', key),
-  };
-  window.__fsMod = fsMod; window.__docs = docs; window.__col = col;
+    const col = {
+      players: fsMod.collection(fbDb, 'players'),
+      checklist: fsMod.collection(fbDb, 'checklist'),
+    };
+    const docs = {
+      player: (id) => fsMod.doc(fbDb, 'players', id),
+      settings: fsMod.doc(fbDb, 'settings', 'general'),
+      check: (key) => fsMod.doc(fbDb, 'checklist', key),
+    };
+    window.__fsMod = fsMod;
+    window.__docs = docs;
+    window.__col = col;
 
-  document.getElementById('signOutBtn').addEventListener('click', () => fbAuth.signOut());
-  showGateSignIn();
+    await seedFirestoreIfEmpty(fsMod, col, docs);
+    dbAvailable = true;
+    renderAll();
 
-  authMod.onAuthStateChanged(fbAuth, async (user) => {
     unsubscribers.forEach(u => u());
     unsubscribers = [];
-
-    if (!user) {
-      currentUser = null;
-      dbAvailable = false;
-      document.getElementById('whoami').style.display = 'none';
-      document.getElementById('authGate').removeAttribute('hidden');
-      document.getElementById('appRoot').setAttribute('hidden', '');
-      showGateSignIn();
-      return;
-    }
-
-    const email = (user.email || '').toLowerCase();
-    if (!COACH_EMAIL_ALLOWLIST.includes(email)) {
-      currentUser = null;
-      dbAvailable = false;
-      document.getElementById('authGate').removeAttribute('hidden');
-      document.getElementById('appRoot').setAttribute('hidden', '');
-      showGateDenied(user.email || '(no email)');
-      return;
-    }
-
-    currentUser = user;
-    dbAvailable = true;
-    document.getElementById('authGate').setAttribute('hidden', '');
-    document.getElementById('appRoot').removeAttribute('hidden');
-    document.getElementById('whoami').style.display = 'flex';
-    document.getElementById('whoamiEmail').textContent = user.email;
-
-    try {
-      await seedFirestoreIfEmpty(fsMod, col, docs);
-    } catch (e) { console.error('seed check failed', e); }
 
     unsubscribers.push(fsMod.onSnapshot(col.players, (snap) => {
       playersCache = snap.docs.map(d => ({ id: d.id, ...(d.data() || {}) }));
       renderAll();
-    }, (err) => console.error('players subscription error', err)));
+    }, (err) => {
+      console.error('players subscription error', err);
+      dbAvailable = false;
+      renderAll();
+    }));
 
     unsubscribers.push(fsMod.onSnapshot(docs.settings, (snap) => {
       if (snap.exists()) settingsCache = { ...DEFAULT_STATE.settings, ...(snap.data() || {}) };
@@ -1015,7 +881,14 @@ async function initStore(){
       checklistCache = next;
       renderAll();
     }, (err) => console.error('checklist subscription error', err)));
-  });
+  } catch (e) {
+    console.error('Firebase initialization failed', e);
+    playersCache = JSON.parse(JSON.stringify(DEFAULT_STATE.players));
+    settingsCache = JSON.parse(JSON.stringify(DEFAULT_STATE.settings));
+    checklistCache = {};
+    dbAvailable = false;
+    renderAll();
+  }
 }
 
 const store = {
@@ -1155,8 +1028,8 @@ function renderBanner(){
   const connDesc = document.getElementById('connDesc');
   if (dbAvailable) {
     b.classList.add('ok');
-    t.textContent = 'Live and shared — checks, adds, and transfers sync instantly to every signed-in coach.';
-    if (connDesc) connDesc.textContent = 'This page is backed by Firebase Firestore. Only Google accounts on the coach allowlist can sign in and write. Names only are stored here — no phone numbers, emails, or locations.';
+    t.textContent = 'Live and shared — checks, adds, and transfers sync instantly to every open copy of this tracker.';
+    if (connDesc) connDesc.textContent = 'This page is backed by Firebase Firestore and does not require sign in. Anyone with the link can view and update the shared tracker. Names only are stored here — no phone numbers, emails, or locations.';
   } else {
     b.classList.remove('ok');
     t.textContent = 'Local demo mode — no Firebase config is set yet, so changes here won’t be saved or shared. See the setup notes for how to connect Firebase.';

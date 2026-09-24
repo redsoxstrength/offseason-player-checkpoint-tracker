@@ -1,44 +1,8 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // The real allowlist lives here, in Firestore itself -- not in the
-    // HTML file -- so it can be checked server-side. Create this document
-    // by hand once (Firestore Database -> Data -> Start collection ->
-    // "config" -> document ID "coaches") with a single array field
-    // called "emails", holding every coach's Google sign-in address in
-    // lowercase, e.g. ["nick.larue@redsox.com", "sthomas@redsox.com"].
-    // Keep this list in sync with COACH_EMAIL_ALLOWLIST near the top of
-    // index.html -- that array only controls the sign-in screen's
-    // messaging; this document is what actually enforces access.
-    function isAllowedCoach() {
-      return request.auth != null
-        && request.auth.token.email != null
-        && request.auth.token.email in
-           get(/databases/$(database)/documents/config/coaches).data.emails;
-    }
-
-    // Nobody can write the allowlist itself from the app -- edit it by
-    // hand in the Firebase console only. Any signed-in user may read it
-    // (needed so the isAllowedCoach() check above can run).
-    match /config/coaches {
-      allow read: if request.auth != null;
-      allow write: if false;
-    }
-
-    match /players/{playerId} {
-      allow read, write: if isAllowedCoach();
-    }
-    match /settings/{docId} {
-      allow read, write: if isAllowedCoach();
-    }
-    match /checklist/{checkId} {
-      allow read, write: if isAllowedCoach();
-    }
-
-    // Anything else is denied by default.
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if true;
     }
   }
 }
