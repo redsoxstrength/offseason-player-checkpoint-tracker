@@ -1,0 +1,16 @@
+{
+  "name": "Off-Season Checkpoint Tracker",
+  "short_name": "Checkpoint Tracker",
+  "description": "Red Sox Player Development bi-weekly off-season checkpoint call tracker",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0C2340",
+  "theme_color": "#0C2340",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
