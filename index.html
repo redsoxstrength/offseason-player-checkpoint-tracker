@@ -211,6 +211,16 @@
   .coach-btn.warn .cpct{color:var(--warn);}
   .coach-btn.bad .cpct{color:var(--bad);}
   .coach-btn.na .cpct{color:var(--ink-dim);}
+  .coach-btn .cinitials{display:none;font-size:12px;font-weight:700;color:var(--ink);letter-spacing:.02em;}
+
+  @media (max-width:600px) and (orientation:portrait){
+    .coach-cycle-row{gap:6px;}
+    .coach-btn{padding:7px 8px;gap:5px;}
+    .coach-btn .cname{display:none;}
+    .coach-btn .cinitials{display:inline;}
+    .coach-btn .ccount{font-size:9.5px;}
+    .coach-btn .cpct{font-size:14px;}
+  }
 
   /* ---- Season progress strip ---- */
   .season-strip{display:flex;flex-wrap:wrap;gap:8px;}
@@ -1107,6 +1117,16 @@ function renderStats(){
    currently-open window changes; there is no stored "reset", it's simply
    always computed against whichever window is open today)
 ============================================================================ */
+function coachInitials(name){
+  return String(name || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(part => part[0])
+    .join('')
+    .toUpperCase();
+}
+
 function renderCoachCycle(){
   const settings = store.getSettings();
   const wins = countableWindows(settings);
@@ -1135,8 +1155,9 @@ function renderCoachCycle(){
     }
     const pillClass = pct===null ? 'na' : (pct>=90?'ok':(pct>=60?'warn':'bad'));
     const isActive = c === filterCoach;
-    return `<button type="button" class="coach-btn ${pillClass} ${isActive?'active':''}" data-coach="${esc(c)}">
+    return `<button type="button" class="coach-btn ${pillClass} ${isActive?'active':''}" data-coach="${esc(c)}" title="${esc(c)}">
       <span class="cname">${esc(c)}</span>
+      <span class="cinitials" aria-hidden="true">${esc(coachInitials(c))}</span>
       <span class="ccount">${players.length}p</span>
       <span class="cpct">${pct===null?'&mdash;':pct+'%'}</span>
     </button>`;
