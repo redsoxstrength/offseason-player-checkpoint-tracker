@@ -1190,7 +1190,8 @@ function renderTracker(){
   const settings = store.getSettings();
   const wins = countableWindows(settings);
   const players = visiblePlayers();
-  const table = document.getElementById('trackerTable');
+  const scroll = document.querySelector('#tab-tracker .table-scroll');
+  let table = document.getElementById('trackerTable');
 
   const earlyNote = document.getElementById('earlyUnlockNote');
   if (earlyNote) {
@@ -1200,15 +1201,20 @@ function renderTracker(){
   }
 
   if (!players.length) {
-    table.innerHTML = '';
-    document.querySelector('#tab-tracker .table-scroll').innerHTML = '<div class="empty">No players match this filter yet. Add players or adjust filters above.</div>';
+    if (table) table.innerHTML = '';
+    if (scroll) scroll.innerHTML = '<div class="empty">No players match this filter yet. Add players or adjust filters above.</div>';
     return;
   }
-  // rebuild container in case empty-state replaced it previously
-  if (!document.querySelector('#tab-tracker .table-scroll table')) {
-    document.querySelector('#tab-tracker .table-scroll').innerHTML = '<table class="tracker" id="trackerTable"></table>';
+  // rebuild the table if an earlier empty-state render replaced it
+  if (scroll && !scroll.querySelector('table')) {
+    scroll.innerHTML = '<table class="tracker" id="trackerTable"></table>';
+    table = document.getElementById('trackerTable');
   }
-  const t = document.getElementById('trackerTable');
+  const t = table || document.getElementById('trackerTable');
+  if (!t) {
+    console.error('Tracker table container is missing.');
+    return;
+  }
 
   const today = new Date(); today.setHours(0,0,0,0);
 
